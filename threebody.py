@@ -165,8 +165,15 @@ def init():
     point1.set_data(x1[0,0],x1[0,1])
     point2.set_data(x2[0,0],x2[0,1])
     ax.legend()
-    return point1,
+    return point1,point2
 
+
+def animation(i):
+    x=x2[0,1000*i]
+    y=x2[1,1000*i]
+    point2.set_data(x,y)
+    #line2.set_data(x2[0,:1000*i+1],x2[1,:1000*i+1])
+    return point1,point2
 
 
 
@@ -220,8 +227,12 @@ def main():
 
     x=evolution(N)
 
-    init()
+    global x2
+    x2=np.copy(x.y[:2])
+
     line2.set_data(x.y[0],x.y[1])
+
+    ani = FuncAnimation(fig, animation, init_func=init, frames=int(N/1000), interval=10, blit=True)
     plt.show()
 
 if __name__=='__main__':
