@@ -6,6 +6,7 @@ import numpy as np
 from scipy.integrate import solve_ivp
 from matplotlib.animation import FuncAnimation
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 
 #==================================================================
 #                       Initial Values
@@ -18,7 +19,7 @@ T,dt=(150,0.1)
 name1 = "Body 1"
 mass1 = 0.8
 x0_1  = np.array([0,0,0])
-v0_1  = np.array([-0.01,0.1,0])
+v0_1  = np.array([-0.01,0.1,0.01])
 
 #BODY 2
 name2 = "Body 2"
@@ -134,21 +135,21 @@ b2=Body(
 #==================================================================
 #                         Animation
 #==================================================================
-fig, ax=plt.subplots()
+fig=plt.figure()
+ax=fig.add_subplot(111,projection='3d')
 ax.grid()
 
 #Body 1
 color1='royalblue'
-point1,=ax.plot([],[],marker='o',linestyle='',color=color1,label=b1.name)
-line1, =ax.plot([],[],color=color1)
+point1,=ax.plot([],[],[],'bo',color=color1,label=b1.name)
+line1, =ax.plot([],[],[],color=color1)
 x1=np.array([b1.get_position()])
 
 #Body 2
 color2='orange'
-point2,=ax.plot([],[],marker='o',linestyle='',color=color2,label=b2.name)
-line2, =ax.plot([],[],color=color2)
+point2,=ax.plot([],[],[],marker='o',linestyle='',color=color2,label=b2.name)
+line2, =ax.plot([],[],[],color=color2)
 x2=np.array([b2.get_position()])
-
 
 
 
@@ -164,16 +165,23 @@ def init():
     xmax=max([max(x1[0]),max(x2[0])])
     ymin=min([min(x1[1]),min(x2[1])])
     ymax=max([max(x1[1]),max(x2[1])])
+    zmin=min([min(x1[2]),min(x2[2])])
+    zmax=max([max(x1[2]),max(x2[2])])
 
     side_x=(xmax-xmin)*0.05
     side_y=(ymax-ymin)*0.05
+    side_z=(zmax-zmin)*0.05
     
     ax.set_xlim(xmin-side_x,xmax+side_x)
     ax.set_ylim(ymin-side_y,ymax+side_y)
+    ax.set_zlim(zmin-side_z,zmax+side_z)
 
     #Initiate the points
-    point1.set_data(x1[0,0],x1[0,1])
-    point2.set_data(x2[0,0],x2[0,1])
+    point1.set_data([x1[0, 0]], [x1[0, 1]])
+    point1.set_3d_properties([x1[0, 2]])
+
+    point2.set_data([x2[0,0]],[x2[0,1]])
+    point2.set_3d_properties([x2[0,2]])
 
     #Add legend
     ax.legend()
@@ -184,12 +192,19 @@ def animation(i):
     #Find new coordinates
     x_1=x1[0,i]
     y_1=x1[1,i]
+    z_1=x1[2,i]
+
     x_2=x2[0,i]
     y_2=x2[1,i]
+    z_2=x2[2,i]
 
     #Update the points
-    point1.set_data(x_1,y_1)
-    point2.set_data(x_2,y_2)
+    point1.set_data([x_1],[y_1])
+    point1.set_3d_properties([z_1])
+
+    point2.set_data([x_2],[y_2])
+    point2.set_3d_properties([z_2])
+
     return point1,point2
 
 
@@ -243,6 +258,7 @@ def main():
     #Number of iteration
     N=int(T/dt)
 
+    #Get trajectories
     x=evolution(N)
     appo=np.reshape(x,(2,6,len(x[0])))
 
@@ -250,9 +266,15 @@ def main():
     x1=np.copy(appo[0])
     x2=np.copy(appo[1])
     
+    #Plots orbits
     line1.set_data(x1[0],x1[1])
-    line2.set_data(x2[0],x2[1])
+    line1.set_3d_properties(x1[2])
 
+    line2.set_data(x2[0],x2[1])
+    line2.set_3d_properties(x2[2])
+
+
+    #Animation
     ani = FuncAnimation(fig, animation, init_func=init, frames=N, interval=10, blit=True)
     plt.show()
 
