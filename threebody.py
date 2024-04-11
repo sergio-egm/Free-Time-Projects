@@ -12,19 +12,19 @@ import matplotlib.pyplot as plt
 #==================================================================
 
 #Time (Evolution time,time increasment)
-T,dt=(150,0.0001)
+T,dt=(150,0.1)
 
 #BODY 1
 name1 = "Body 1"
-mass1 = 0.5
+mass1 = 0.8
 x0_1  = np.array([0,0,0])
-v0_1  = np.array([-0.01,0.2,0])
+v0_1  = np.array([-0.01,0.1,0])
 
 #BODY 2
 name2 = "Body 2"
 mass2 = 1-mass1
 x0_2  = np.array([3,0,0])
-v0_2  = np.array([0.01,-0.2,0])
+v0_2  = -mass1/mass2*v0_1
 
 
 
@@ -135,8 +135,6 @@ b2=Body(
 #                         Animation
 #==================================================================
 fig, ax=plt.subplots()
-ax.set_xlim(-10,10)
-ax.set_ylim(-10,10)
 ax.grid()
 
 #Body 1
@@ -161,18 +159,35 @@ x2=np.array([b2.get_position()])
 
 #Initialize animation
 def init():
+    #Set axis limit
+    xmin=min([min(x1[0]),min(x2[0])])
+    xmax=max([max(x1[0]),max(x2[0])])
+    ymin=min([min(x1[1]),min(x2[1])])
+    ymax=max([max(x1[1]),max(x2[1])])
+
+    side_x=(xmax-xmin)*0.05
+    side_y=(ymax-ymin)*0.05
+    
+    ax.set_xlim(xmin-side_x,xmax+side_x)
+    ax.set_ylim(ymin-side_y,ymax+side_y)
+
+    #Initiate the points
     point1.set_data(x1[0,0],x1[0,1])
     point2.set_data(x2[0,0],x2[0,1])
+
+    #Add legend
     ax.legend()
     return point1,point2
 
 
 def animation(i):
-    x_1=x1[0,1000*i]
-    y_1=x1[1,1000*i]
-    x_2=x2[0,1000*i]
-    y_2=x2[1,1000*i]
+    #Find new coordinates
+    x_1=x1[0,i]
+    y_1=x1[1,i]
+    x_2=x2[0,i]
+    y_2=x2[1,i]
 
+    #Update the points
     point1.set_data(x_1,y_1)
     point2.set_data(x_2,y_2)
     return point1,point2
@@ -238,7 +253,7 @@ def main():
     line1.set_data(x1[0],x1[1])
     line2.set_data(x2[0],x2[1])
 
-    ani = FuncAnimation(fig, animation, init_func=init, frames=int(N/1000), interval=10, blit=True)
+    ani = FuncAnimation(fig, animation, init_func=init, frames=N, interval=10, blit=True)
     plt.show()
 
 if __name__=='__main__':
