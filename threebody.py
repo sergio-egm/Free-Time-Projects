@@ -3,10 +3,9 @@
 #==================================================================
 
 import numpy as np 
-from scipy.integrate import ode, solve_ivp
+from scipy.integrate import solve_ivp
 from matplotlib.animation import FuncAnimation
 import matplotlib.pyplot as plt
-from tqdm import tqdm
 
 #==================================================================
 #                       Initial Values
@@ -19,13 +18,13 @@ T,dt=(150,0.0001)
 name1 = "Body 1"
 mass1 = 0.5
 x0_1  = np.array([0,0,0])
-v0_1  = np.array([0,0,0])
+v0_1  = np.array([-0.01,0.2,0])
 
 #BODY 2
 name2 = "Body 2"
 mass2 = 1-mass1
 x0_2  = np.array([3,0,0])
-v0_2  = np.array([0.01,-0.5,0])
+v0_2  = np.array([0.01,-0.2,0])
 
 
 
@@ -169,10 +168,13 @@ def init():
 
 
 def animation(i):
-    x=x2[0,1000*i]
-    y=x2[1,1000*i]
-    point2.set_data(x,y)
-    #line2.set_data(x2[0,:1000*i+1],x2[1,:1000*i+1])
+    x_1=x1[0,1000*i]
+    y_1=x1[1,1000*i]
+    x_2=x2[0,1000*i]
+    y_2=x2[1,1000*i]
+
+    point1.set_data(x_1,y_1)
+    point2.set_data(x_2,y_2)
     return point1,point2
 
 
@@ -188,15 +190,16 @@ def animation(i):
 
 #System of differential equations
 def system_ode(t,y):
-    b2.set_coords(y)
-    return np.append(y[3:],b2(b1))
+    b1.set_coords(y[:6])
+    b2.set_coords(y[6:])
+    return np.concatenate((y[3:6],b1(b2),y[9:],b2(b1)))
 
 
 
 #Compute bodyes trajectories
 def evolution(N):
     print('Computing Trejectories',end='...')
-    y0=b2.get_coords()
+    y0=np.append(b1.get_coords(),b2.get_coords())
 
     x=solve_ivp(
         system_ode,
@@ -208,7 +211,7 @@ def evolution(N):
     assert x.success
     print('DONE!')
 
-    return x
+    return x.y
 
 
 #==================================================================
@@ -226,11 +229,14 @@ def main():
     N=int(T/dt)
 
     x=evolution(N)
+    appo=np.reshape(x,(2,6,len(x[0])))
 
-    global x2
-    x2=np.copy(x.y[:2])
-
-    line2.set_data(x.y[0],x.y[1])
+    global x1,x2
+    x1=np.copy(appo[0])
+    x2=np.copy(appo[1])
+    
+    line1.set_data(x1[0],x1[1])
+    line2.set_data(x2[0],x2[1])
 
     ani = FuncAnimation(fig, animation, init_func=init, frames=int(N/1000), interval=10, blit=True)
     plt.show()
