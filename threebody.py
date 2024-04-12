@@ -1,5 +1,5 @@
 #==================================================================
-#            Simulation of the Three Body Problem
+#            Simulation of the Three Bodies Problem
 #==================================================================
 
 import numpy as np 
@@ -17,15 +17,21 @@ T,dt=(150,0.1)
 
 #BODY 1
 name1 = "Body 1"
-mass1 = 0.8
+mass1 = 0.4
 x0_1  = np.array([0,0,0])
 v0_1  = np.array([-0.01,0.1,0.01])
 
 #BODY 2
 name2 = "Body 2"
-mass2 = 1-mass1
+mass2 = 0.3
 x0_2  = np.array([3,0,0])
-v0_2  = -mass1/mass2*v0_1
+v0_2  = np.array([0.01,-0.1,-0.01])
+
+#BODY 3
+name3 = "Body 3"
+mass3 = 1-mass1-mass2
+x0_3  = np.array([2,1,-1])
+v0_3  = -(mass1*v0_1+mass2*v0_2)/mass3
 
 
 
@@ -130,6 +136,12 @@ b2=Body(
     x=x0_2,
     v=v0_2
 )
+b3=Body(
+    name=name3,
+    mass=mass3,
+    x=x0_3,
+    v=v0_3
+)
 
 
 #==================================================================
@@ -141,7 +153,7 @@ ax.grid()
 
 #Body 1
 color1='royalblue'
-point1,=ax.plot([],[],[],'bo',color=color1,label=b1.name)
+point1,=ax.plot([],[],[],marker='o',linestyle='',color=color1,label=b1.name)
 line1, =ax.plot([],[],[],color=color1)
 x1=np.array([b1.get_position()])
 
@@ -150,6 +162,11 @@ color2='orange'
 point2,=ax.plot([],[],[],marker='o',linestyle='',color=color2,label=b2.name)
 line2, =ax.plot([],[],[],color=color2)
 x2=np.array([b2.get_position()])
+#Body 3
+color3='magenta'
+point3,=ax.plot([],[],[],marker='o',linestyle='',color=color3,label=b3.name)
+line3, =ax.plot([],[],[],color=color3)
+x3=np.array([b3.get_position()])
 
 
 
@@ -161,12 +178,14 @@ x2=np.array([b2.get_position()])
 #Initialize animation
 def init():
     #Set axis limit
-    xmin=min([min(x1[0]),min(x2[0])])
-    xmax=max([max(x1[0]),max(x2[0])])
-    ymin=min([min(x1[1]),min(x2[1])])
-    ymax=max([max(x1[1]),max(x2[1])])
-    zmin=min([min(x1[2]),min(x2[2])])
-    zmax=max([max(x1[2]),max(x2[2])])
+    xmin=min([min(x1[0]),min(x2[0]),min(x3[0])])
+    xmax=max([max(x1[0]),max(x2[0]),max(x3[0])])
+
+    ymin=min([min(x1[1]),min(x2[1]),min(x3[1])])
+    ymax=max([max(x1[1]),max(x2[1]),max(x3[1])])
+
+    zmin=min([min(x1[2]),min(x2[2]),min(x3[2])])
+    zmax=max([max(x1[2]),max(x2[2]),max(x3[2])])
 
     side_x=(xmax-xmin)*0.05
     side_y=(ymax-ymin)*0.05
@@ -183,9 +202,12 @@ def init():
     point2.set_data([x2[0,0]],[x2[0,1]])
     point2.set_3d_properties([x2[0,2]])
 
+    point3.set_data([x3[0,0]],[x3[0,1]])
+    point3.set_3d_properties([x3[0,2]])
+
     #Add legend
     ax.legend()
-    return point1,point2
+    return point1,point2,point3
 
 
 def animation(i):
@@ -198,6 +220,10 @@ def animation(i):
     y_2=x2[1,i]
     z_2=x2[2,i]
 
+    x_3=x3[0,i]
+    y_3=x3[1,i]
+    z_3=x3[2,i]
+
     #Update the points
     point1.set_data([x_1],[y_1])
     point1.set_3d_properties([z_1])
@@ -205,7 +231,10 @@ def animation(i):
     point2.set_data([x_2],[y_2])
     point2.set_3d_properties([z_2])
 
-    return point1,point2
+    point3.set_data([x_3],[y_3])
+    point3.set_3d_properties([z_3])
+
+    return point1,point2,point3
 
 
 
@@ -221,15 +250,17 @@ def animation(i):
 #System of differential equations
 def system_ode(t,y):
     b1.set_coords(y[:6])
-    b2.set_coords(y[6:])
-    return np.concatenate((y[3:6],b1(b2),y[9:],b2(b1)))
+    b2.set_coords(y[6:12])
+    b3.set_coords(y[12:])
+    return np.concatenate((y[3:6],b1(b2)+b1(b3),y[9:12],b2(b1)+b2(b3),y[15:],b3(b1)+b3(b2)))
 
 
 
 #Compute bodyes trajectories
 def evolution(N):
     print('Computing Trejectories',end='...')
-    y0=np.append(b1.get_coords(),b2.get_coords())
+
+    y0=np.concatenate((b1.get_coords(),b2.get_coords(),b3.get_coords()))
 
     x=solve_ivp(
         system_ode,
@@ -249,22 +280,26 @@ def evolution(N):
 #==================================================================
 def main():
     print(Colors.CYAN+'='*50)
-    print(f"\t\tThree Body Problem")
+    print(f"\t\tThree Bodies Problem")
     print('='*50+Colors.ENDC)
+
     print(f'{Colors.RED}\n\tT_MAX ={Colors.ENDC} {T:4d} , {Colors.RED} T_STEP ={Colors.ENDC} {dt}\n')
+
     print(b1)
     print(b2)
+    print(b3)
 
     #Number of iteration
     N=int(T/dt)
 
     #Get trajectories
     x=evolution(N)
-    appo=np.reshape(x,(2,6,len(x[0])))
+    appo=np.reshape(x,(3,6,len(x[0])))
 
-    global x1,x2
+    global x1,x2,x3
     x1=np.copy(appo[0])
     x2=np.copy(appo[1])
+    x3=np.copy(appo[2])
     
     #Plots orbits
     line1.set_data(x1[0],x1[1])
@@ -272,6 +307,9 @@ def main():
 
     line2.set_data(x2[0],x2[1])
     line2.set_3d_properties(x2[2])
+
+    line3.set_data(x3[0],x3[1])
+    line3.set_3d_properties(x3[2])
 
 
     #Animation
