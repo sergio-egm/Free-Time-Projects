@@ -4,9 +4,10 @@
 
 import numpy as np 
 from scipy.integrate import solve_ivp
-from matplotlib.animation import FuncAnimation
+from matplotlib.animation import FuncAnimation, PillowWriter
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
+from tqdm import tqdm
 
 #==================================================================
 #                       Initial Values
@@ -14,6 +15,10 @@ from mpl_toolkits.mplot3d import Axes3D
 
 #Time (Evolution time,time increasment)
 T,dt=(150,0.1)
+#Visualize bodies trajectories
+plot_orbits=False
+#Save animation
+save_ani=False
 
 #BODY 1
 name1 = "Body 1"
@@ -45,7 +50,7 @@ class Colors:
     ENDC   = '\033[0m'
     BOLD   = '\033[1m'
     GREEN  = '\033[1;32m'
-    BLUE   = '\033[0;34m'
+    BLUE   = '\033[1;34m'
     YELLOW = '\033[1;33m'
     CYAN   = '\033[1;36m'
     RED    = '\033[1;31m'
@@ -248,10 +253,11 @@ def animation(i):
 
 
 #System of differential equations
-def system_ode(t,y):
+def system_ode(t,y,progress):
     b1.set_coords(y[:6])
     b2.set_coords(y[6:12])
     b3.set_coords(y[12:])
+    progress.update(t-progress.n)
     return np.concatenate((y[3:6],b1(b2)+b1(b3),y[9:12],b2(b1)+b2(b3),y[15:],b3(b1)+b3(b2)))
 
 
@@ -262,15 +268,20 @@ def evolution(N):
 
     y0=np.concatenate((b1.get_coords(),b2.get_coords(),b3.get_coords()))
 
-    x=solve_ivp(
-        system_ode,
-        (0,T),y0,
-        t_eval=np.linspace(0,T,num=N),
-        method='LSODA'
-    )
+
+    #Loading bar estetic
+    desc       = Colors.BLUE+'Computing'+Colors.ENDC
+    bar_format = '{desc}:|{bar}| {n:3.2f} {unit} /{total} {unit} | [ {elapsed} < {remaining} , {rate_fmt} ]'
+    with tqdm(total=T,desc=desc,unit='s',bar_format=bar_format,colour='cyan') as pbar:
+        x=solve_ivp(
+            system_ode,
+            (0,T),y0,
+            t_eval=np.linspace(0,T,num=N,endpoint=True),
+            method='LSODA',
+            args=(pbar,)
+        )
 
     assert x.success
-    print('DONE!')
 
     return x.y
 
@@ -302,18 +313,22 @@ def main():
     x3=np.copy(appo[2])
     
     #Plots orbits
-    line1.set_data(x1[0],x1[1])
-    line1.set_3d_properties(x1[2])
+    print(f'{Colors.RED}Tajectories Lines = {Colors.ENDC}{plot_orbits}')
+    if plot_orbits:
+        line1.set_data(x1[0],x1[1])
+        line1.set_3d_properties(x1[2])
 
-    line2.set_data(x2[0],x2[1])
-    line2.set_3d_properties(x2[2])
+        line2.set_data(x2[0],x2[1])
+        line2.set_3d_properties(x2[2])
 
-    line3.set_data(x3[0],x3[1])
-    line3.set_3d_properties(x3[2])
+        line3.set_data(x3[0],x3[1])
+        line3.set_3d_properties(x3[2])
 
 
     #Animation
     ani = FuncAnimation(fig, animation, init_func=init, frames=N, interval=10, blit=True)
+    if save_ani :
+        ani.save('threebody.gif', writer='imagemagick')
     plt.show()
 
 if __name__=='__main__':
