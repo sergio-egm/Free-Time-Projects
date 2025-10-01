@@ -5,7 +5,6 @@ These are some projects that I implemented during my free time.
 ## Compleated Progjects
 
 - __Three bodies problem__: Simulation of the famous problem involving three bodies attracting each other.
+- __PyTorch__: Learning to use `torch` python library.
 
 ## Working Projects
-
-- __PyTorch__: Learning to use `torch` python library.
